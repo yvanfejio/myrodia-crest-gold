@@ -48,8 +48,62 @@ Scents are diluted at 4 parts scent to 6 parts water. That mix could be smelled 
 
 ```
 docs/                 PDF copy of the project document
+code/arduino/         Arduino sketch that listens for the game and switches the atomizers
+code/unity/           Unity C# scripts that send a command when the player enters an environment
+tests/                Arduino sketches (and one Unity script) for the tests described in the report
 reference-code/       Example code from the tutorials linked in the document (not written by the team)
 ```
+
+## Code and tests
+
+> **Note:** the code in `code/` and `tests/` was written after the project, in October 2026, with
+> AI help. It shows how the system described in the report works and documents the tests the report
+> describes. It is not the original code from the project. Every sketch compiles for the Arduino Uno.
+
+### Wiring used in the code
+
+| Part | Grove Base Shield port / Arduino pin |
+| --- | --- |
+| Atomizer 1 – Forest | D2 |
+| Atomizer 2 – Bakery | D4 |
+| Atomizer 3 – Beach | D7 |
+| Atomizer 4 – Christmas | D8 |
+| Grove Mini Fan (test 4) | D5 (a PWM pin) |
+| Relay module IN1–IN4 (test 5) | pins 9, 10, 11, 12 |
+
+If your parts are on different ports, change the pin numbers at the top of each sketch.
+
+### Running the game and device together
+
+1. Open [code/arduino/myrodia_listener/myrodia_listener.ino](code/arduino/myrodia_listener/myrodia_listener.ino)
+   in the Arduino IDE, choose **Tools > Board > Arduino Uno** and the right **Port**, and upload it.
+2. In Unity, copy [ScentSender.cs](code/unity/ScentSender.cs) and [ScentZone.cs](code/unity/ScentZone.cs) into `Assets/`.
+3. Set **Edit > Project Settings > Player > Other Settings > Api Compatibility Level** to **.NET Framework**.
+4. Add an empty GameObject with `ScentSender` on it and set **Port Name** to the Arduino's port (for example `COM3`).
+5. For each environment, add an invisible cube with **Is Trigger** ticked and a `ScentZone`
+   (1 = Forest, 2 = Bakery, 3 = Beach, 4 = Christmas). The player must have the tag `Player`.
+6. **Close the Arduino Serial Monitor**, then press Play. Only one program can use the port at a time.
+
+The Arduino restarts for about 2 seconds when Unity opens the port, so start the player outside the scent zones.
+
+| Command sent by Unity | What the Arduino does |
+| --- | --- |
+| `1`–`4` | Turns on that scent's atomizer and turns the others off |
+| `0` | Turns every atomizer off. Sent when the player leaves a zone and when the game stops (emergency stop) |
+| *(15 seconds with no change)* | Turns the scent off by itself so it never runs on |
+
+### Tests
+
+| Test | What it checks | Where it comes from in the report |
+| --- | --- | --- |
+| [test01_atomizer_single](tests/test01_atomizer_single/test01_atomizer_single.ino) | One atomizer switches on and off, first with water, then with scent | Meeting 8 (13/04/26) |
+| [test02_all_atomizers](tests/test02_all_atomizers/test02_all_atomizers.ino) | All four atomizers work and are on the right ports | Purchasing, Steve's notes |
+| [test03_scent_spread_timer](tests/test03_scent_spread_timer/test03_scent_spread_timer.ino) | Time until a mix can be smelled 50 cm away (goal: under 8 s) | Scents (4:6 scent to water) |
+| [test04_fan_speed](tests/test04_fan_speed/test04_fan_speed.ino) | Fan speed when given only part of the power (PWM), and how fast a gust starts | Conclusion: Mist and Vortex aspects |
+| [test05_relay_check](tests/test05_relay_check/test05_relay_check.ino) | Each of the 4 relay channels clicks on and off | Meeting with Steve (18/03/2026) |
+| [test06_serial_link](tests/test06_serial_link/test06_serial_link.ino) + [SerialTestPanel.cs](tests/unity/SerialTestPanel.cs) | The Arduino receives what Unity sends, before the atomizers are connected | Meetings 10 and 11 |
+
+Upload a test sketch, then open **Tools > Serial Monitor** at **9600 baud** to see what it is doing.
 
 ## Reference code from the linked tutorials
 
